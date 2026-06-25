@@ -58,14 +58,16 @@ export class SorobanTransactionScheduler {
         const jobData: SorobanTransactionJobData = {
           transactionId: transaction.id,
           operation: 'retry',
-          correlationId: transaction.correlationId,
+          correlationId: transaction.correlationId ?? undefined,
         };
 
         // Calculate delay based on nextRetryAt
-        const delay = Math.max(
-          0,
-          new Date(transaction.nextRetryAt).getTime() - Date.now(),
-        );
+        const delay = transaction.nextRetryAt
+          ? Math.max(
+              0,
+              new Date(transaction.nextRetryAt).getTime() - Date.now(),
+            )
+          : 0;
 
         return this.sorobanQueue.add(`retry-${transaction.id}`, jobData, {
           delay,

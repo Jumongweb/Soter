@@ -2,11 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetricsService } from '../observability/metrics/metrics.service';
 import { Inject } from '@nestjs/common';
-import { OnchainAdapter, ONCHAIN_ADAPTER_TOKEN } from './onchain.adapter';
+import {
+  OnchainAdapter,
+  ONCHAIN_ADAPTER_TOKEN,
+  InitEscrowResult,
+  CreateClaimResult,
+  DisburseResult,
+} from './onchain.adapter';
 import {
   SorobanTransactionStatus,
   SorobanOperationType,
   RetryableErrorType,
+  SorobanTransaction,
 } from '@prisma/client';
 
 export interface CreateSorobanTransactionParams {
@@ -129,7 +136,7 @@ export class SorobanTransactionLifecycleService {
       );
 
       // Execute the transaction based on operation type
-      let result;
+      let result: InitEscrowResult | CreateClaimResult | DisburseResult;
       switch (transaction.operation) {
         case SorobanOperationType.create_claim:
           result = await this.onchainAdapter.createClaim({
@@ -389,7 +396,7 @@ export class SorobanTransactionLifecycleService {
   /**
    * Get transactions ready for retry
    */
-  async getRetryableTransactions(): Promise<any[]> {
+  async getRetryableTransactions(): Promise<SorobanTransaction[]> {
     const now = new Date();
 
     return this.prisma.sorobanTransaction.findMany({
