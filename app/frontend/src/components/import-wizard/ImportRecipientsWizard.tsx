@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle2, ChevronLeft, Download, FileSpreadsheet, RefreshCcw, UploadCloud } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import {
@@ -47,6 +47,25 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [headerValidation, setHeaderValidation] = useState<HeaderValidationResult | null>(null);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
+  const [liveMessage, setLiveMessage] = useState('');
+  const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const liveRegionRef = useRef<HTMLDivElement | null>(null);
+
+  function announce(message: string) {
+    setLiveMessage(message);
+  }
+
+  useEffect(() => {
+    if (liveMessage && liveRegionRef.current) {
+      liveRegionRef.current.textContent = liveMessage;
+    }
+  }, [liveMessage]);
+
+  useEffect(() => {
+    if (stepHeadingRef.current) {
+      stepHeadingRef.current.focus();
+    }
+  }, [step]);
 
   const summary = validationResult?.summary;
   const canAdvanceToPreview = Boolean(file && parsedData && !fileError);
@@ -91,8 +110,10 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
           `Required columns not found: ${missingCols}. Check the CSV headers.`,
           'warning',
         );
+        announce(`Warning: Required columns not found: ${missingCols}. Check the CSV headers.`);
       } else {
         toast('CSV ready', `Loaded ${data.rows.length} recipient rows for review.`, 'success');
+        announce(`CSV ready. Loaded ${data.rows.length} recipient rows for review.`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to parse the selected CSV file.';
@@ -196,6 +217,12 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-white to-slate-50 px-4 py-8 dark:via-slate-950 dark:to-slate-950">
+      <div
+        ref={liveRegionRef}
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
@@ -207,7 +234,13 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
               Back to campaigns
             </Link>
             <div className="space-y-1">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">Import recipients</h1>
+              <h1
+                ref={stepHeadingRef}
+                tabIndex={-1}
+                className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50"
+              >
+                Import recipients
+              </h1>
               <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
                 Upload a recipient list, inspect the parsed rows, clear validation issues, and confirm the final import for campaign <span className="font-medium text-slate-900 dark:text-slate-100">{campaignId}</span>.
               </p>
@@ -244,9 +277,13 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
                 fileError={fileError}
                 isParsing={isParsing}
                 parseProgress={importProgress?.phase === 'parsing' ? importProgress : null}
-                onFileSelected={handleFileSelected}
-                onNext={() => setStep(2)}
                 canProceed={canAdvanceToPreview}
+                headingRef={stepHeadingRef}
+                onFileSelected={handleFileSelected}
+                onNext={() => {
+                  setStep(2);
+                  announce('Step 2: Preview recipient data');
+                }}
               />
             )}
 
@@ -260,8 +297,15 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
                 isValidating={isValidating}
                 validateProgress={importProgress?.phase === 'validating' ? importProgress : null}
                 canProceed={canAdvanceToValidation}
-                onBack={() => setStep(1)}
-                onNext={handleRunValidation}
+                headingRef={stepHeadingRef}
+                onBack={() => {
+                  setStep(1);
+                  announce('Step 1: Upload recipient file');
+                }}
+                onNext={() => {
+                  handleRunValidation();
+                  announce('Running validation on parsed rows');
+                }}
               />
             )}
 
@@ -272,10 +316,17 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
                 headers={parsedData.headers}
                 remainingErrors={cappedResult.remainingErrors}
                 remainingWarnings={cappedResult.remainingWarnings}
-                onBack={() => setStep(2)}
-                onNext={() => setStep(4)}
-                onDownloadReport={handleDownloadReport}
                 canProceed={canAdvanceToConfirm}
+                headingRef={stepHeadingRef}
+                onBack={() => {
+                  setStep(2);
+                  announce('Step 2: Preview recipient data');
+                }}
+                onNext={() => {
+                  setStep(4);
+                  announce('Step 4: Confirm import');
+                }}
+                onDownloadReport={handleDownloadReport}
               />
             )}
 
@@ -286,7 +337,10 @@ export function ImportRecipientsWizard({ campaignId }: ImportRecipientsWizardPro
                 hasBlockingErrors={hasBlockingErrors}
                 submitMessage={submitMessage}
                 submitError={submitError}
-                onBack={() => setStep(3)}
+                onBack={() => {
+                  setStep(3);
+                  announce('Step 3: Resolve validation issues');
+                }}
                 onConfirm={handleConfirmImport}
                 onStartOver={handleStartOver}
               />
