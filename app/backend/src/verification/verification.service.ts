@@ -8,12 +8,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CampaignStatus,
-  ClaimStatus,
-  Prisma,
-  PrismaClientKnownRequestError,
-} from '@prisma/client';
+import { ClaimStatus, Prisma } from '@prisma/client';
 import { CreateVerificationDto } from './dto/create-verification.dto';
 import {
   ReviewQueuePaginationMode,
@@ -30,22 +25,20 @@ type ReviewQueueCursorPayload = {
   id: string;
 };
 
-type ReviewQueueItem = {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  status: ClaimStatus;
-  campaignId: string;
-  amount: Prisma.Decimal;
-  recipientRef: string;
-  evidenceRef: string | null;
-  campaign: {
-    id: string;
-    name: string;
-    status: CampaignStatus;
-    archivedAt: Date | null;
-  };
-};
+const reviewQueueClaimArgs = {
+  include: {
+    campaign: {
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        archivedAt: true,
+      },
+    },
+  },
+} satisfies Prisma.ClaimDefaultArgs;
+
+type ReviewQueueItem = Prisma.ClaimGetPayload<typeof reviewQueueClaimArgs>;
 
 type ReviewQueueResponse = {
   items: ReviewQueueItem[];
@@ -264,22 +257,13 @@ export class VerificationService {
       const where = [...filters, ...cursorFilter];
       const items = await this.prisma.claim.findMany({
         where: where.length > 0 ? { AND: where } : undefined,
-        include: {
-          campaign: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-              archivedAt: true,
-            },
-          },
-        },
+        ...reviewQueueClaimArgs,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: limit + 1,
       });
 
       const hasNextPage = items.length > limit;
-      const pageItems = items.slice(0, limit) as ReviewQueueItem[];
+      const pageItems: ReviewQueueItem[] = items.slice(0, limit);
       const nextCursor =
         hasNextPage && pageItems.length > 0
           ? this.encodeReviewQueueCursor(pageItems[pageItems.length - 1])
@@ -304,16 +288,7 @@ export class VerificationService {
     const [items, totalItems] = await Promise.all([
       this.prisma.claim.findMany({
         where,
-        include: {
-          campaign: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-              archivedAt: true,
-            },
-          },
-        },
+        ...reviewQueueClaimArgs,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limit,
@@ -322,7 +297,7 @@ export class VerificationService {
     ]);
 
     return {
-      items: items as ReviewQueueItem[],
+      items,
       pagination: {
         mode: 'page',
         page,
@@ -466,10 +441,6 @@ export class VerificationService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      if (error instanceof PrismaClientKnownRequestError) {
         throw error;
       }
 
