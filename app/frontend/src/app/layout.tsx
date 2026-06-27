@@ -9,6 +9,7 @@ import { ToastProvider } from '@/components/ToastProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MisconfiguredPage } from '@/components/MisconfiguredPage';
+import { VersionProvider } from '@/components/VersionProvider';
 import { validateEnv } from '@/lib/env';
 
 const geistSans = Geist({
@@ -61,12 +62,14 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <ErrorBoundary>
-              <QueryProvider>
-                <ToastProvider>
-                  <Navbar />
-                  {children}
-                </ToastProvider>
-              </QueryProvider>
+              <VersionProvider>
+                <QueryProvider>
+                  <ToastProvider>
+                    <Navbar />
+                    {children}
+                  </ToastProvider>
+                </QueryProvider>
+              </VersionProvider>
             </ErrorBoundary>
           </ThemeProvider>
         </NextIntlClientProvider>
