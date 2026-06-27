@@ -9,6 +9,7 @@ import { ToastProvider } from '@/components/ToastProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MisconfiguredPage } from '@/components/MisconfiguredPage';
+import { NetworkMismatchBanner } from '@/components/NetworkMismatchBanner';
 import { validateEnv } from '@/lib/env';
 
 const geistSans = Geist({
@@ -64,6 +65,7 @@ export default async function RootLayout({
               <QueryProvider>
                 <ToastProvider>
                   <Navbar />
+                  <NetworkMismatchBanner />
                   {children}
                 </ToastProvider>
               </QueryProvider>
