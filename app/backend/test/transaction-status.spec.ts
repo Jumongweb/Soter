@@ -31,7 +31,10 @@ describe('Transaction Status Polling', () => {
         BudgetService,
         { provide: PrismaService, useValue: {} },
         { provide: ONCHAIN_ADAPTER_TOKEN, useValue: mockAdapter },
-        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('testnet') } },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue('testnet') },
+        },
         { provide: SorobanEventCorrelationService, useValue: mockEventCorrelationService },
       ],
     }).compile();
