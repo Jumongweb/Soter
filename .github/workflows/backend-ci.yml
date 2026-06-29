@@ -35,6 +35,8 @@ jobs:
         run: pnpm --filter backend run lint
 
       - name: Test
+        env:
+          USE_FIXTURES: "true"
         run: pnpm --filter backend run test
 
       - name: Build
