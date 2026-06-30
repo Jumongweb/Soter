@@ -162,7 +162,7 @@ class TestCORSMiddleware:
 
     def test_cors_headers_allowed_origin(self, client):
         """Test that allowed origins receive CORS headers."""
-        with patch("config.settings.is_origin_allowed", return_value=True):
+        with patch("config.Settings.is_origin_allowed", return_value=True):
             response = client.get(
                 "/health",
                 headers={"Origin": "https://example.com"}
@@ -173,7 +173,7 @@ class TestCORSMiddleware:
 
     def test_cors_headers_disallowed_origin(self, client):
         """Test that disallowed origins do not receive CORS headers."""
-        with patch("config.settings.is_origin_allowed", return_value=False):
+        with patch("config.Settings.is_origin_allowed", return_value=False):
             response = client.get(
                 "/health",
                 headers={"Origin": "https://evil.com"}
@@ -183,7 +183,7 @@ class TestCORSMiddleware:
 
     def test_cors_preflight_allowed(self, client):
         """Test preflight request for allowed origin."""
-        with patch("config.settings.is_origin_allowed", return_value=True):
+        with patch("config.Settings.is_origin_allowed", return_value=True):
             response = client.options(
                 "/health",
                 headers={
@@ -198,7 +198,7 @@ class TestCORSMiddleware:
 
     def test_cors_preflight_disallowed(self, client):
         """Test preflight request for disallowed origin."""
-        with patch("config.settings.is_origin_allowed", return_value=False):
+        with patch("config.Settings.is_origin_allowed", return_value=False):
             response = client.options(
                 "/health",
                 headers={
@@ -233,7 +233,7 @@ class TestSensitiveEndpointCORSProtection:
 
     def test_sensitive_endpoint_rejects_cors(self, client):
         """Test that sensitive artifact endpoints reject CORS entirely."""
-        with patch("config.settings.is_origin_allowed", return_value=True):
+        with patch("config.Settings.is_origin_allowed", return_value=True):
             response = client.post(
                 "/v1/ai/verification-artifacts/test/access",
                 json={"mode": "signed_url"},
@@ -265,7 +265,7 @@ class TestSensitiveEndpointCORSProtection:
 
     def test_non_sensitive_endpoint_allows_cors(self, client):
         """Test that non-sensitive endpoints allow CORS for allowed origins."""
-        with patch("config.settings.is_origin_allowed", return_value=True):
+        with patch("config.Settings.is_origin_allowed", return_value=True):
             response = client.get(
                 "/health",
                 headers={"Origin": "https://example.com"}
