@@ -28,13 +28,19 @@ function buildConnectionString(params: {
   port?: string;
   database?: string;
 }): string {
-  const { user = DEFAULT_USER, password = DEFAULT_PASSWORD, host = DEFAULT_HOST, port = DEFAULT_PORT, database = DEFAULT_DATABASE } = params;
-  
+  const {
+    user = DEFAULT_USER,
+    password = DEFAULT_PASSWORD,
+    host = DEFAULT_HOST,
+    port = DEFAULT_PORT,
+    database = DEFAULT_DATABASE,
+  } = params;
+
   // Ensure password is present
   if (!password || password.trim() === '') {
     throw new Error('Password cannot be empty. Please set a valid password.');
   }
-  
+
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
 }
 
@@ -43,9 +49,12 @@ let baseUrl: string;
 try {
   if (process.env.DATABASE_URL) {
     // Validate that the connection string has a password
+
     const hasPassword = /:\/\/[^:]+:[^@]+@/.test(process.env.DATABASE_URL);
     if (!hasPassword) {
-      console.warn('⚠️ DATABASE_URL is missing a password. Using default connection string.');
+      console.warn(
+        '⚠️ DATABASE_URL is missing a password. Using default connection string.',
+      );
       baseUrl = buildConnectionString({});
     } else {
       baseUrl = process.env.DATABASE_URL;
@@ -58,7 +67,7 @@ try {
   baseUrl = buildConnectionString({});
 }
 
-const testDbUrl = baseUrl.replace(/\/[^\/]+$/, `/${testDbName}`);
+const testDbUrl = baseUrl.replace(/\/[^/]+$/, `/${testDbName}`);
 
 let pool: Pool;
 let store: IdempotencyStore;
@@ -70,11 +79,13 @@ let hasValidDatabase = false;
 /**
  * Test database connection with retry logic
  */
-async function testDatabaseConnection(connectionString: string): Promise<boolean> {
+async function testDatabaseConnection(
+  connectionString: string,
+): Promise<boolean> {
   let testPool: Pool | null = null;
   try {
-    testPool = new Pool({ 
-      connectionString, 
+    testPool = new Pool({
+      connectionString,
       max: 1,
       idleTimeoutMillis: 5000,
       connectionTimeoutMillis: 5000,
@@ -94,11 +105,14 @@ async function testDatabaseConnection(connectionString: string): Promise<boolean
 /**
  * Create a test database with retry logic
  */
-async function createTestDatabase(adminPool: Pool, dbName: string): Promise<void> {
+async function createTestDatabase(
+  adminPool: Pool,
+  dbName: string,
+): Promise<void> {
   try {
     // Check if database already exists
     const result = await adminPool.query(
-      `SELECT 1 FROM pg_database WHERE datname = $1`,
+      'SELECT 1 FROM pg_database WHERE datname = $1',
       [dbName],
     );
 
@@ -118,7 +132,10 @@ async function createTestDatabase(adminPool: Pool, dbName: string): Promise<void
 /**
  * Drop test database with error handling
  */
-async function dropTestDatabase(adminPool: Pool, dbName: string): Promise<void> {
+async function dropTestDatabase(
+  adminPool: Pool,
+  dbName: string,
+): Promise<void> {
   try {
     await adminPool.query(`DROP DATABASE IF EXISTS ${dbName}`);
   } catch (error) {
@@ -161,7 +178,9 @@ function createTestApp(store: IdempotencyStore): express.Application {
 beforeAll(async () => {
   hasValidDatabase = await testDatabaseConnection(baseUrl);
   if (hasValidDatabase) {
-    console.log('✅ Database connection successful. Running integration tests.');
+    console.log(
+      '✅ Database connection successful. Running integration tests.',
+    );
   } else {
     console.log('⚠️ Database connection failed. Skipping integration tests.');
   }
@@ -176,7 +195,7 @@ beforeAll(async () => {
 
       try {
         // Create admin connection
-        adminPool = new Pool({ 
+        adminPool = new Pool({
           connectionString: baseUrl,
           max: 2,
         });
@@ -185,7 +204,7 @@ beforeAll(async () => {
         await createTestDatabase(adminPool, testDbName);
 
         // Connect to the test database
-        pool = new Pool({ 
+        pool = new Pool({
           connectionString: testDbUrl,
           max: 5,
           idleTimeoutMillis: 10000,
@@ -294,7 +313,8 @@ beforeAll(async () => {
 
     it('Processing record returns 409', async () => {
       const validBody = { transactionXdr: 'AAAAAAABLC0=' };
-      const validFingerprint = RequestFingerprint.fromBody(validBody).asString();
+      const validFingerprint =
+        RequestFingerprint.fromBody(validBody).asString();
 
       await pool.query(
         `

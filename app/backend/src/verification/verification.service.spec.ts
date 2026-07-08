@@ -26,20 +26,22 @@ describe('VerificationService', () => {
 
   // Create a mock for VerificationMetadataService
   const mockVerificationMetadataService = {
-    enhanceWithMetadata: jest.fn().mockImplementation((result, claimId, campaignId) => ({
-      ...result,
-      metadata: {
-        campaignId,
-        claimId,
-        packageId: `pkg_${claimId.substring(0, 8)}`,
-        network: 'testnet',
-        chainId: 'testnet',
-        version: '1.0.0',
-        timestamp: new Date(),
-      },
-      warnings: [],
-      validationErrors: [],
-    })),
+    enhanceWithMetadata: jest
+      .fn()
+      .mockImplementation((result, claimId, campaignId) => ({
+        ...result,
+        metadata: {
+          campaignId,
+          claimId,
+          packageId: `pkg_${claimId.substring(0, 8)}`,
+          network: 'testnet',
+          chainId: 'testnet',
+          version: '1.0.0',
+          timestamp: new Date(),
+        },
+        warnings: [],
+        validationErrors: [],
+      })),
     generateMetadata: jest.fn().mockImplementation((claimId, campaignId) => ({
       campaignId,
       claimId,
@@ -50,14 +52,18 @@ describe('VerificationService', () => {
       timestamp: new Date(),
     })),
     validateMetadata: jest.fn().mockReturnValue([]),
-    validateWebhookPayload: jest.fn().mockReturnValue({ isValid: true, errors: [] }),
+    validateWebhookPayload: jest
+      .fn()
+      .mockReturnValue({ isValid: true, errors: [] }),
   };
 
   // Mock CorrelationPropagationUtil
   const mockCorrelationPropagationUtil = {
     getCurrentCorrelationId: jest.fn().mockReturnValue('test-correlation-id'),
-    getCorrelationHeaders: jest.fn().mockReturnValue({ 'x-correlation-id': 'test-correlation-id' }),
-    addCorrelationToRequest: jest.fn().mockImplementation((config) => config),
+    getCorrelationHeaders: jest
+      .fn()
+      .mockReturnValue({ 'x-correlation-id': 'test-correlation-id' }),
+    addCorrelationToRequest: jest.fn().mockImplementation(config => config),
     logOutboundRequest: jest.fn(),
     setLogger: jest.fn(),
   };
